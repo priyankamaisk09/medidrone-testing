@@ -7,11 +7,10 @@ import random
 import numpy as np
 from scipy.signal import convolve
 from collections import deque
-import math
 import plotly.graph_objects as go
 from streamlit_autorefresh import st_autorefresh
 
-# ✅ Set page config once
+# ✅ Page setup
 st.set_page_config(page_title="MediDrone AI System", layout="wide", page_icon="🚁")
 
 # ------------------------------
@@ -41,11 +40,11 @@ def show_triage():
     st.subheader("Drone Flight Status")
     steps = ["Taking Off", "En Route", "Delivered", "Returning"]
     status_text = st.empty()
-
     for step in steps:
         status_text.text(f"Drone Status: {step}")
         time.sleep(1.2)
     status_text.text("Drone Status: Completed ✅")
+
 
 # ------------------------------
 # 2️⃣ BIRD AVOIDANCE MODULE
@@ -88,7 +87,6 @@ def show_bird_avoidance():
     if st.sidebar.button("Switch to AUTO Mode"):
         st.session_state.control_mode = "AUTO"
         log_event("Operator switched to AUTO mode")
-
     if st.sidebar.button("Switch to REMOTE Mode"):
         st.session_state.control_mode = "REMOTE"
         log_event("Operator switched to REMOTE mode")
@@ -99,7 +97,6 @@ def show_bird_avoidance():
     if st.button("Run Simulation Step"):
         bird = detect_birds()
         threat = assess_threat(bird)
-
         if st.session_state.control_mode == "REMOTE":
             log_event("REMOTE control active — operator is flying")
             st.success("REMOTE: Operator in control, no AI action")
@@ -108,12 +105,12 @@ def show_bird_avoidance():
                 log_event("No bird detected — continuing mission")
                 st.info("AUTO: No bird detected. Drone continues mission.")
             elif threat == "MONITOR":
-                log_event(f"Bird detected at safe distance ({bird['distance']}m). Monitoring.")
+                log_event(f"Bird detected at {bird['distance']}m — monitoring")
                 st.warning(f"AUTO: Bird detected at {bird['distance']}m — monitoring.")
             elif threat == "AVOID":
                 maneuver = plan_maneuver("AVOID")
-                log_event(f"Bird nearby ({bird['distance']}m) — executing avoidance: {maneuver}")
-                st.error(f"AUTO: Avoidance maneuver triggered → {maneuver}")
+                log_event(f"Bird nearby ({bird['distance']}m) — executing {maneuver}")
+                st.error(f"AUTO: Avoidance maneuver → {maneuver}")
                 if play_sound:
                     st.write("🔊 Sound deterrent activated")
             elif threat == "EMERGENCY":
@@ -126,73 +123,47 @@ def show_bird_avoidance():
     st.subheader("📋 Drone Telemetry Log")
     for entry in reversed(st.session_state.logs[-10:]):
         st.write(entry)
-# ------------------------------
-# 3️⃣DIAGNOSTICS
-# ------------------------------
-# diagnostics.py
-# Yuva — Diagnostics Module (Point-of-Care Tests)
 
-import streamlit as st
-import random
-import time
 
+# ------------------------------
+# 3️⃣ DIAGNOSTICS MODULE
+# ------------------------------
 def show_diagnostics():
     st.title("🧪 Diagnostic Lab - Point of Care Tests")
     st.write("Upload a sample file or choose a test type to get diagnostic results.")
 
-    # --- Input Options ---
-    uploaded_file = st.file_uploader("📂 Upload a blood sample file (CSV/Image)", type=["csv", "jpg", "png"])
+    uploaded_file = st.file_uploader("📂 Upload a blood sample file", type=["csv", "jpg", "png"])
     test_choice = st.selectbox("Or choose a test type", ["None", "Glucose Test", "Hemoglobin Test", "RBC Count"])
 
-    # --- Mock Result Generator ---
     outcomes = {
         "Glucose Test": ["High Glucose", "Normal Glucose", "Low Glucose"],
         "Hemoglobin Test": ["High Hemoglobin", "Normal Hemoglobin", "Low Hemoglobin"],
         "RBC Count": ["High RBC", "Normal RBC", "Low RBC"]
     }
 
-    # --- Helper function to display results with color ---
     def show_result(test_name, result):
         if "High" in result:
             st.warning(f"⚠️ {test_name}: {result}")
         elif "Low" in result:
             st.error(f"❌ {test_name}: {result}")
-        elif "Normal" in result:
-            st.success(f"✅ {test_name}: {result}")
         else:
-            st.info(f"ℹ️ {test_name}: {result}")
+            st.success(f"✅ {test_name}: {result}")
 
-    # --- Display Results ---
     if uploaded_file is not None:
         st.success(f"✅ Sample file received: {uploaded_file.name}")
         with st.spinner("Analyzing sample..."):
-            time.sleep(1.5)  # simulate processing delay
+            time.sleep(1.5)
             test_name = random.choice(list(outcomes.keys()))
             result = random.choice(outcomes[test_name])
             show_result(test_name, result)
-
     elif test_choice != "None":
         with st.spinner(f"Running {test_choice}..."):
             time.sleep(1.5)
             result = random.choice(outcomes[test_choice])
             show_result(test_choice, result)
-
     else:
         st.info("👉 Please upload a file or select a test type to see results.")
 
-# app.py
-# Mini test app to run only Yuva's diagnostics module
-
-import streamlit as st
-from diagnostics import show_diagnostics
-
-st.set_page_config(page_title="MediDrone — Diagnostics Test", layout="centered")
-
-st.sidebar.title("MediDrone Prototype (Test Mode)")
-page = st.sidebar.radio("Choose Module", ["Diagnostics"])
-
-if page == "Diagnostics":
-    show_diagnostics()
 
 # ------------------------------
 # 4️⃣ TELECONSULTATION MODULE
@@ -217,8 +188,9 @@ def show_consultation():
             reply = "Doctor: " + responses.get(user_message.lower(), "Doctor: Thank you for the info. We'll guide you further.")
             st.text_area("Chat History", value=f"You: {user_message}\n{reply}", height=150)
 
+
 # ------------------------------
-#  5️⃣VITALS MONITORING MODULE (Auto-refresh)
+# 5️⃣ VITALS MONITORING MODULE
 # ------------------------------
 def show_vitals():
     st.title("Vitals Monitoring Simulator — ECG, SpO₂, Body Temperature")
@@ -304,6 +276,7 @@ def show_vitals():
     temp_metric.metric("Temp (°C)", f"{st.session_state.temp:.2f}")
     hr_metric.metric("HR (bpm)", f"{hr}")
 
+
 # ------------------------------
 # 6️⃣ MEDICINE DISPENSER MODULE
 # ------------------------------
@@ -319,22 +292,33 @@ def show_medicine_dispenser():
             st.success(f"✅ Dispensing {med} 💊")
             st.balloons()
 
+
 # ------------------------------
-# MAIN SIDEBAR NAVIGATION
+# 🧭 MAIN SIDEBAR NAVIGATION
 # ------------------------------
 st.sidebar.title("🚀 MediDrone AI System")
+
 option = st.sidebar.selectbox(
     "Select Module",
-    ["Triage", "Bird Avoidance", "Teleconsultation", "Vitals Monitoring", "Medicine Dispenser"]
+    [
+        "Triage",
+        "Bird Avoidance",
+        "Diagnostics",
+        "Teleconsultation",
+        "Vitals Monitoring",
+        "Medicine Dispenser"
+    ]
 )
 
 if option == "Triage":
     show_triage()
 elif option == "Bird Avoidance":
     show_bird_avoidance()
+elif option == "Diagnostics":
+    show_diagnostics()
 elif option == "Teleconsultation":
     show_consultation()
 elif option == "Vitals Monitoring":
     show_vitals()
-else:
+elif option == "Medicine Dispenser":
     show_medicine_dispenser()
