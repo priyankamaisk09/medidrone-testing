@@ -1,0 +1,10 @@
+streamlit
+streamlit-folium
+plotly
+scipy
+streamlit-autorefresh
+scikit-learn 
+matplotlib
+pillow 
+pandas
+
